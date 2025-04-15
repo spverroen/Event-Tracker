@@ -1,0 +1,44 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    networks:
+      - backend
+    ports:
+      - "${MYSQL_PORT}:${MYSQL_PORT}"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - ./mysql:/var/lib/mysql:rw
+    user: mysql
+
+  express:
+    container_name: express
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    stdin_open: true
+    tty: true 
+    networks:
+      - backend
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      BACKEND_PORT: ${BACKEND_PORT}
+
+networks:
+  backend:
+    name: backend
